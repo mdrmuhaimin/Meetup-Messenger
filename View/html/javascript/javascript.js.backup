@@ -1,0 +1,146 @@
+	
+	var authorized; 
+	var tokenType;
+	var acess_token;
+	window.onload=function()
+	{
+		authorized = checkAuthorizationStatus();
+		console.log("Authorization status = "+authorized);
+		if(authorized){
+			var query_string = (window.location.hash).split("&"); 
+			tokenType = (query_string[2]).split("=")[1];
+			acess_token = (query_string[3]).split("=")[1];
+			//sendMessage();
+		}
+		else{
+			document.getElementById("form").innerHTML = "";
+			setStatusMessage("Acess Denied", "red");
+			
+		}
+	}
+	function checkAuthorizationStatus()
+	{
+		console.log(window.location);
+		var query_string = (window.location.hash).split("&"); 
+		if(window.location.hash.lastIndexOf("#error", 0) === 0)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	function sendMessage()//var member_id, var group_id, var subject, var message
+	{
+		var member_id = document.forms["messageForm"]["memId"].value; //107837152 
+		var group_id = document.forms["messageForm"]["groupId"].value; //7658652
+		var subj = document.forms["messageForm"]["subj"].value;
+		var message = document.forms["messageForm"]["message"].value;
+		var url = "https://api.meetup.com/2/message.json?access_token="+acess_token+"";
+		if(isValidateData(member_id, group_id, subj, message))
+		{
+			var postReq = "member_id="+member_id+"&group_id="+group_id+"&subject="+subj+"&message="+message ;
+			console.log(url);
+			console.log(postReq);
+			var xmlhttp;
+			if (window.XMLHttpRequest)
+			{// code for IE7+, Firefox, Chrome, Opera, Safari
+				xmlhttp=new XMLHttpRequest();
+			}
+			else
+			{// code for IE6, IE5
+				xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			
+			xmlhttp.onreadystatechange=function()
+			{
+				console.log("Ready state = "+xmlhttp.readyState);
+				if (xmlhttp.readyState==4 && xmlhttp.status>=200)
+				{
+					
+					if(xmlhttp.status == 202)
+					{
+						setStatusMessage("Message successfully send", "green");
+					}
+					else if(xmlhttp.status == 400)
+					{
+						var response = JSON.parse(xmlhttp.responseText);
+						console.log("Response :"+response.code);
+						showError(response);
+					}
+					else
+					{
+						console.log("Status Code :"+xmlhttp.status);
+					}
+					
+				}
+			}
+			xmlhttp.open("POST",url,true);
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+			try
+			{
+				xmlhttp.send(postReq);
+			}
+			catch(err)
+			{		
+				console.log("Error :"+err.message+" "+JSON.parse(xmlhttp.responseText).code)
+			}
+		}
+		
+	}
+	
+	function setStatusMessage(message, color)
+	{
+		var statusMessage;
+		statusMessage = document.getElementById("statusMessage");
+		statusMessage.innerHTML = "<h2>"+message+"</h2>";
+		if (arguments.length == 2)
+		{
+			statusMessage.style.color = color;
+		}
+	}
+	
+	function showError(error)
+	{
+		setStatusMessage("Error :"+error.details.valueOf(), "red");
+	}
+	
+	function isValidateData(member_id, group_id, subject, message)
+	{
+		var validationError;
+		hideValidationError();
+		if(isNaN(member_id))
+		{
+			validationError = document.getElementById("member_id_input_error");
+			console.log("Invalid Member ID");
+		}
+		else if(isNaN(group_id))
+		{
+			validationError = document.getElementById("group_id_input_error");
+			console.log("Invalid Group ID");
+		}
+		else if(subject.length > 50)
+		{
+			validationError = document.getElementById("subject_input_error");
+			console.log("Invalid Subject ");
+		}
+		else if(message.length >= 5000)
+		{
+			validationError = document.getElementById("message_input_error");
+			console.log("Invalid message");
+		}
+		else
+		{
+			return true;
+		}
+		validationError.style.display = "block";
+		return false;
+	}
+	function hideValidationError()
+	{
+		document.getElementById("member_id_input_error").style.display = "none";
+		document.getElementById("group_id_input_error").style.display = "none";
+		document.getElementById("subject_input_error").style.display = "none";
+		document.getElementById("message_input_error").style.display = "none";
+	}
